@@ -1,0 +1,1350 @@
+//============================================================================
+// Lanquage       : C++ 17
+// Name        : cs4500Project2.cpp
+// Author      : Lucas Lovellette, Silvia Matthews and  Jess Payton
+// Class       : CS4500 section 1
+// Date        : September 21, 2023
+// Files       : This needs to be done
+// References  : https://en.wikipedia.org/wiki/Cardinal_direction
+// Description : This expirments creates X by Y grid based on the input variable DIMENTION.
+//                  There at two players.  player1 starts at 0,0 and Player2 starts
+//                  at Dimension, Dimension.  We then simulate movemnets of the players     
+//                  either in Cardinal(4) or Ordinal(8) directions.  The amount of moves
+//                  the players move and the number of times the play is determined by variables 
+//                  MaxMoves and repetitions.  We run 3 experiments with 1 independent
+//                  and 3 dependent variables.  All variables are recieved throgh and input
+//                  indata.txt and the results are printed to outdata.txt.
+// Description of data structure: Person and PersonGPS classes
+//============================================================================
+
+#include <iostream>
+#include <cstdlib>
+#include <string>
+#include <ctime>
+#include <regex>
+#include <cctype>
+#include <time.h>
+#include <limits>
+#include <fstream>
+#include <vector>
+#include <iomanip>
+#include <list>
+
+
+using namespace std;
+
+const int DIMENSION_MAX = 100;
+const int REPETITION_MAX = 50000;
+const int MAXMOVES_MAX = 1000000;
+const int PROTOCOL_4 = 4;
+const int PROTOCOL_8 = 8;
+
+enum IndependentType {Dimension, MaxMoves, Repetition, Protocol};         //source - https://www.geeksforgeeks.org/enumeration-in-cpp/
+enum DependentType {LowestMove, HighestMove, AverageMove};
+
+//============================================================================
+// Class       : Person
+// Description : Object representing a person
+// Source      :   https://www.ibm.com/docs/en/i/7.4?topic=only-destructors-c
+//============================================================================
+
+class Person{
+
+private:
+   string fName;
+public:
+	//Constructors
+	Person(){
+		fName = "Stranger";         //default constructor
+	}
+
+	Person(string n){        //not used, but this can be used if a Person object was created from Main
+		fName = n;
+	}
+
+	//Destructors
+	~Person() {
+		//  cout << "destructing Person" << endl;
+	}
+
+	//Getter and Setter
+	string getFirstName(){
+		return fName;
+	}
+
+	void setFirstName(string n){
+		fName = n;
+	}
+};
+
+//============================================================================
+// Class       : PersonGPS
+// Description : Purpose of this class is to track location of a person, setting x and y location
+//                   and bounds for min and max
+// Source      : https://www.w3schools.com/cpp/cpp_inheritance.asp used as a refresher for C++ vs Java
+//
+//              https://www.ibm.com/docs/en/i/7.4?topic=only-destructors-c
+//============================================================================
+class PersonGPS: public Person{
+
+public:
+   PersonGPS(){
+		//default constructor
+		//automatically creates a Person object using a default constructor
+			x = y = minBound = maxBound = 0;
+	}
+
+   PersonGPS(int a, int b, int c, int d){
+	   //automatically creates a Person object using a default constructor
+	   x = a;
+	   y = b;
+	   minBound = c;
+	   maxBound = d;
+	}
+
+	//Destructors
+	~PersonGPS() {
+		//    cout << "destructing PersonGPS" << endl;
+	}
+
+	int getX(){
+		 return x;
+	}
+
+	int getY(){
+		return y;
+	}
+
+	int getMinBound(){
+		return minBound;
+	}
+
+	int getMaxBound(){
+		return maxBound;
+	}
+
+	void setX(int a){
+		x = a;
+	}
+
+	void setY(int b){
+		y = b;
+	}
+
+	void setMinBound(int c){
+		minBound = c;
+	}
+
+	void setMaxBound(int d){
+		 maxBound = d;
+	}
+
+
+
+//============================================================================
+// Function    : movePerson
+// Description : Purpose of this function is to check bounds and determine if position should be
+//               update
+// Source      : none used
+// Comments    : Display messages for testing commented out
+//============================================================================
+
+bool movePerson(int a, int b){
+	bool test = true;
+	/*--------------------------------------------------------
+	 * With HW2 if we are on protocol 8, then there could be a move for x and y on movement to NW, NE, SW, SE. The below if / else
+	 * condition is no longer application. Modified so that we check to see if an adjustment is needed for each coordinate.
+	 */
+	/*
+	if (a != 0){ //direction to move is either E or W. Make sure moving it is not out-of-bounds
+		test = checkBounds(x + a);
+	} else {
+		test = checkBounds(y + b);
+	}
+	*/
+	if (a != 0){ //direction to move is either E or W. Make sure moving it is not out-of-bounds
+		test = checkBounds(x + a);
+	}
+
+	if (b != 0 && test){
+		test = checkBounds(y + b);
+	}
+
+	if (test){
+		x += a;
+		y += b;
+		//cout << this->getFirstName() << " moved to (" << x << ", " << y << ")" << endl;
+		return true;
+	} else {
+			//cout << this->getFirstName() << "  hit out of bounds and is halting at position (" << x << ", " << y << ")" << endl;
+			return false;
+	}
+}
+
+
+
+//============================================================================
+// Function name : checkCoordinates
+// Description   : A Bool test to see if players are at same grid coordinates.
+//                 This is checked after every move
+// Source        : none used
+//============================================================================
+
+bool checkCoordinates(int x1, int y1){
+	//x1 = other person's x coordinate
+	//y1 = other person's y coordinate
+	if (x == x1 && y == y1){
+		return true;
+	} else {
+		return false;
+	}
+}
+
+private: // class specific attributes and functions to remain hidden
+int x, y, minBound, maxBound;  //Coordinates of a person and minimum/maximum boundaries
+
+//============================================================================
+// Function name : checkBounds
+// Description   : A Bool test to see if the x and y value is larger than zero and less than dimension/max bound
+// Source        : none
+//============================================================================
+bool checkBounds(int testVal){
+	if (testVal < minBound || testVal > maxBound){
+		return false;
+	} else {
+		return true;
+    }
+}
+};
+
+//============================================================================
+// Function    : promptInteger
+// Description : Purpose of this function is to continue to prompt user for a
+//               positive integer less than maxNum, contains only numbers, and contains
+//               no special characters.
+// Source      : https://linuxhint.com/regular-expression-basics-cpp/
+//============================================================================
+/*
+int promptInteger(int maxNum){
+
+	while (true){
+		string input;
+
+		cout << "Please enter a positive integer value less than " << maxNum << ": ";
+		cin >> input;
+
+        //Start testing input through regex's to formulate appropriate error messages
+        if (regex_search(input,regex("[a-zA-Z]"))){
+        	//checking for alpha character
+        	cout << "There is an alphabetical character in " << input << ". ";
+        } else if (regex_search(input,regex("[^a-zA-Z0-9.]"))){
+        	//checking for non-alphanumeric
+        	cout << "There is a special character in " << input << ". ";
+        } else if (regex_search(input,regex("[.]"))){
+        	//checking for decimal
+        	cout << "There is a decimal in " << input << ". ";
+        } else if (stoi(input) <= 0) {
+        	//negative number or 0 is not allowed
+        	cout << "Zero or negative integer was used. Your input was " << input << ". ";
+        } else if (stoi(input) >= maxNum){
+        	//positive integer provide but it is at or exceeds maxNum
+        	cout << "Maximum threshold exceeded. Your input was " << input << ". ";
+        } else {
+        	return stoi(input);
+        }
+	}//end while
+}//end promptInteger
+
+
+*/
+//============================================================================
+// Function    : attemptMove
+// Description : Purpose of this function is to evaluate the direction of the move and call movePerson.
+//                   Allows both players to use this function.
+// Source      : https://linuxhint.com/regular-expression-basics-cpp/;
+//               help with object passing from:
+//               https://www.ibm.com/docs/en/zos/2.4.0?topic=calls-pass-by-reference-c-only
+//               pass-by-reference citation - https://cplusplus.com/forum/beginner/215643/
+//============================================================================
+
+bool attemptMove(PersonGPS &person, int direction){
+
+	bool move;
+
+	switch (direction){
+		case 1:                  //North
+			//cout << person.getFirstName() << " attempting to move North." << endl;
+			move = person.movePerson(0, 1);
+			break;
+		case 2:                  //East
+			//cout << person.getFirstName() << " attempting to move East." << endl;
+			move = person.movePerson(1, 0);
+			break;
+		case 3:                  //South
+			//cout << person.getFirstName() << " attempting to move South." << endl;
+			move = person.movePerson(0, -1);
+			break;
+		case 4:                  //West
+			//cout << person.getFirstName() << " attempting to move West." << endl;
+			move = person.movePerson(-1, 0);
+			break;
+		case 5: 	     		//NorthEast
+			//cout << person.getFirstName() << " attempting to move NorthEast." << endl;
+			move = person.movePerson(1, 1);
+			break;
+		case 6:	    			//SouthEast
+		//	cout << person.getFirstName () << " attempting to move SouthEast." << endl;
+			move = person.movePerson(1, -1);
+			break;
+		case 7:	        		//SouthWest
+			//cout << person.getFirstName() << " attempting to move SouthWest." << endl;
+			move = person.movePerson(-1, -1);
+			break;
+		case 8:					//NorthWest
+			//cout << person.getFirstName() << " attempting to mover NorthWest" << endl;
+			move = person.movePerson(-1, 1);
+			break;
+		default:
+			cout << "Random number generator provided an invalid index. Ending program. . . " << endl;
+			exit(1);
+    }
+	return move;
+}
+
+//============================================================================
+// Function    : calcAvg
+// Description : divided total moves and divides by the numbewr of repetions.
+// Source      : 
+//============================================================================
+
+double calcAvg(list<int> moves){
+	int repetitions = moves.size();
+	double sum = 0.00;
+
+	for (int item : moves){
+		sum += item;
+	}
+	return (sum / (double)repetitions);
+}
+
+/*------------------------------------------------------------------------------------------------
+Function        : printOutputHeader
+Description     : The purpose of this function is print the columns for a table header for our
+                  output file, outdata.txt. This function will take into account of the independent
+                  data type (variable values), fixed data type (constant values), and the dependent 
+                  data type (calculated values).
+input           : x - enumeration index passed in to identify independent data type. This data type
+                      will be on the far left column of the header
+                  y - enumeration index passed in to identify dependent data type. This data type
+                      will be on the far right column of the header
+                  fout - reference to output stream which will be a pointer to an output file
+output          : output file will contain a header row
+--------------------------------------------------------------------------------------------------*/
+
+void printOutputHeader(IndependentType &x, DependentType &y, ostream &fout){
+
+    switch (x) {
+	    case Dimension:
+	        switch (y) {
+	            case LowestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |    Maximum|  Number of|           |     Lowest|" << endl
+                         << "| Dimensions|      Moves|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |    Maximum|  Number of|           |    Highest|" << endl
+                         << "| Dimensions|      Moves|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |    Maximum|  Number of|           |    Average|" << endl
+                         << "| Dimensions|      Moves|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	        
+	    case MaxMoves:
+	        switch (y) {
+	            case LowestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|    Maximum|           |  Number of|           |     Lowest|" << endl
+                         << "|      Moves| Dimensions|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|    Maximum|           |  Number of|           |    Highest|" << endl
+                         << "|      Moves| Dimensions|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|    Maximum|           |  Number of|           |    Average|" << endl
+                         << "|      Moves| Dimensions|    Repeats|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	        
+	    case Repetition:
+	        switch (y) {
+	            case LowestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|  Number of|           |    Maximum|           |     Lowest|" << endl
+                         << "|    Repeats| Dimensions|      Moves|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|  Number of|           |    Maximum|           |    Highest|" << endl
+                         << "|    Repeats| Dimensions|      Moves|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|  Number of|           |    Maximum|           |    Average|" << endl
+                         << "|    Repeats| Dimensions|      Moves|   Protocol|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	    
+	        break;
+	        
+	    case Protocol:
+	        switch (y) {
+	            case LowestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |           |    Maximum|  Number of|     Lowest|" << endl
+                         << "|   Protocol| Dimensions|      Moves|    Repeats|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |           |    Maximum|  Number of|    Highest|" << endl
+                         << "|   Protocol| Dimensions|      Moves|    Repeats|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "-------------------------------------------------------------" << endl
+                         << "|           |           |    Maximum|  Number of|    Average|" << endl
+                         << "|   Protocol| Dimensions|      Moves|    Repeats|      Moves|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	        
+	    default:
+	        cout << "You have passed in an unknown independent type value that has not implemented yet." << endl
+                 << "Program aborting..." << endl;
+            exit(1);
+	        break;
+    } //end switch (x)
+} //end printOutputHeader
+
+/*------------------------------------------------------------------------------------------------
+Function        : printSpacer
+Description     : The purpose of this function is print a blank line on the output file, outdata.txt.
+input           : fout - reference to output stream which will be a pointer to an output file
+output          : output file will contain a blank row between outputs (table and bar chart)
+--------------------------------------------------------------------------------------------------*/
+
+void printSpacer(ostream &fout){
+    fout << endl;
+}
+
+/*------------------------------------------------------------------------------------------------
+Function        : printResult
+Description     : The purpose of this function is print the columns for a table header for our
+                  output file, outdata.txt. This function will take into account of the independent
+                  data type (variable values), fixed data type (constant values), and the dependent 
+                  data type (calculated values).
+input           : x - enumeration index passed in to identify independent data type. This data type
+                      will be on the far left column of the header
+                  y - enumeration index passed in to identify dependent data type. This data type
+                      will be on the far right column of the header
+                  fout - reference to output stream which will be a pointer to an output file
+output          : output file will contain a header row
+--------------------------------------------------------------------------------------------------*/
+
+void printResult(IndependentType &x, DependentType &y, ostream &fout, int dimension, int maxMoves, int repetition, int protocol, int lowestMove, int highestMove, double average) {
+    
+    switch (x) {
+	    case Dimension: 
+	        switch (y) {
+	            case LowestMove:
+	                fout << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << lowestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << highestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << average << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	        
+        case MaxMoves:
+            switch (y) {
+	            case LowestMove:
+	                fout << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << lowestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << highestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << average << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	        
+        case Repetition:
+            switch (y) {
+	            case LowestMove:
+	                fout << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << lowestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << highestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << average << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	    
+	    case Protocol:
+	        switch (y) {
+	            case LowestMove:
+	                fout << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << lowestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case HighestMove:
+	                fout << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << highestMove << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                case AverageMove:
+	                fout << "|" << right << setw(11) << protocol
+                         << "|" << right << setw(11) << dimension
+                         << "|" << right << setw(11) << maxMoves
+                         << "|" << right << setw(11) << repetition
+                         << "|" << right << setw(11) << average << "|" << endl
+                         << "-------------------------------------------------------------" << endl;
+                    break;
+                default:
+                    cout << "You have passed in an unknown dependent type value that has not implemented yet." << endl
+                         << "Program aborting..." << endl;
+                    exit(1);
+                    break;
+	        } //end switch (y)
+	        
+	        break;
+	   
+	   default:
+	        cout << "You have passed in an unknown independent type value that has not implemented yet." << endl
+                 << "Program aborting..." << endl;
+            exit(1);
+	        break;
+    } //end switch (x)
+} //end printResult
+
+/*------------------------------------------------------------------------------------------------
+Function        : simulate
+Description     : 
+input           : 
+output          : 
+--------------------------------------------------------------------------------------------------*/
+
+void simulate(IndependentType &x, DependentType &y, int dimension, int maxMoves, int repetition, int protocol, ostream &fout) {
+   
+    list<int> list;
+   	int currentMove, lowestMove, highestMove;
+	double averageMove;
+	bool move;				//used to determine if a user has moved
+
+	//for loop
+	for(int i = 0; i < repetition ; i++) {
+	    
+	    //Initializing person a and person b
+		PersonGPS personA(0,0,0,dimension);
+		PersonGPS personB(dimension,dimension,0,dimension);
+		personA.setFirstName("Waldo");
+		personB.setFirstName("Wilma");
+		
+		currentMove = 0;
+		
+		while (currentMove < maxMoves){
+			//Move person A using randomA random number generator
+			move = false;
+
+			if (protocol == 4){
+				//move will not be used for protocol 4
+				move = attemptMove(personA, 1 + (rand () % protocol));
+				currentMove++;
+			} else {
+				//Inside protocol 8 condition. If a person hits a boundary, they should keep trying until they
+				//make a move
+				while (!move && (currentMove != maxMoves)){
+					move = attemptMove(personA, 1 + (rand () % protocol));
+				}
+				//currentMove count does not increment until they actually make a move for protocol 8
+				currentMove++;
+			}
+
+			if (personA.checkCoordinates(personB.getX(), personB.getY())){
+				//cout << "Hurray! Reunion! Moves taken: "  << currentMove <<  endl;
+				//cout << "Moves left: " << m - currentMove << endl;
+				break;
+			} else if (currentMove == maxMoves) {
+				//cout << "MaxMoves reached without the two meeting. Moves: " << endl;
+			} else {
+				//Again, but for B this time
+				if (protocol == 4){
+					//move will not be used for protocol 4
+					move = attemptMove(personB, 1 + (rand () % protocol));
+					currentMove++;
+				} else {
+					//Inside protocol 8 condition. If a person hits a boundary, they should keep trying until they
+					//make a move
+					//reset move to false to evaluate if personB moves
+					move = false;
+
+					while (!move && (currentMove != maxMoves)){
+						move = attemptMove(personB, 1 + (rand () % protocol));
+					//	currentMove++;
+				    }
+				    //currentMove count does not increment until they actually make a move for protocol 8
+				    currentMove++;
+		        } //end else
+				
+				if (personA.checkCoordinates(personB.getX(), personB.getY())){
+					//cout << "Hurray! Reunion! Moves taken: "  << currentMove <<  endl;
+					//cout << "Moves left: " << m - currentMove << endl;
+					break;
+				} else if (currentMove == maxMoves) {
+				//	cout << "MaxMoves reached without the two meeting. Moves: "  << currentMove << endl;
+				} else {
+				} //end else
+			} //else
+		} //end while
+		list.push_back(currentMove);
+	} //end for
+
+	list.sort();
+	lowestMove = *list.begin();
+	list.reverse();
+	highestMove = *list.begin();
+	averageMove = calcAvg(list);
+	printResult(x, y, fout, dimension, maxMoves, repetition, protocol, lowestMove, highestMove, averageMove);
+  
+} //end simulate
+
+//Jess Start added Silvia's token and file input/output functions
+//============================================================================
+// Function    : split
+// Description : Purpose of this function is to split the input stream into tokens
+//               
+// Source      : Page 362 "C++ from control structures through objects" Tony Gaddis
+//============================================================================
+
+void split(const string &s, char delim, vector<string>& tokens) {
+    int tokenStart = 0;   //Start position of the next token
+
+    //Find the first occurrence of the delimiter
+    int delimPosition = s.find(delim);
+
+    //While we haven't run out of delimiters...
+    while (delimPosition != string::npos) {
+
+        //Extract the token
+        string tok = s.substr(tokenStart, delimPosition - tokenStart);
+
+        //Push the token onto the tokens vector
+        tokens.push_back(tok);
+
+        //Move delimPosition to the next character position.
+        delimPosition++;
+
+        //Move tokenStart to delimiPosition
+        tokenStart = delimPosition;
+
+        //Find the next occurrence of the delimiter
+        delimPosition = s.find(delim, delimPosition);
+
+        //If no more delimiters, extract the last token
+        if (delimPosition == string::npos) {
+            string tok=s.substr(tokenStart, delimPosition - tokenStart);
+            tokens.push_back(tok);
+        }
+    }
+}
+
+/* REMOVE START
+//============================================================================
+// Function    : isInsideRange
+// Description : Purpose of this function is to continue ensure that the infput
+//                  file of indata.txt is properly formated. The restrictions are 
+//                  listed under e
+//                  no other characters.
+// Source      : https://linuxhint.com/regular-expression-basics-cpp/
+//============================================================================
+void isInsideRange(int arr[]) {
+
+    //Check 1st line
+    if (arr[0] < 100 && arr[1] < 100 && arr[2] < 100 && arr[3] < 100 && arr[4] < 100 && arr[0] > 0 && arr[1] > 0 && arr[2] > 0 && arr[3] > 0 && arr[4] > 0) {
+        if (arr[0] <= arr[1] && arr[1] <= arr[2] && arr[2] <= arr[3] && arr[3] <= arr[4]) {
+            //cout << "Data in the first line are correct.\n";
+        }else {
+            cout << "Five numbers in the first line should increase from left to right.\n";
+            exit (1);
+        }
+    }else {
+        cout << "Please provide all data in the range [1,100) in the first line\n";
+        exit (1);
+    }
+
+    int repetitionMax = 100000;
+    //Check 3rd line
+    //Jess start - changed 100 to 10000 (note his requirement says 10000 but sample shows 50000)
+    //if (arr[8] < 100 && arr[9] < 100 && arr[10] < 100 && arr[11] < 100 && arr[12] < 100 && arr[8] > 0 && arr[9] > 0 && arr[10] > 0 && arr[11] > 0 && arr[12] > 0) {
+    //    if (arr[8] <= arr[9] && arr[9] <= arr[10] && arr[10] <= arr[11] && arr[11] <= arr[12]) {
+    if (arr[8] <= repetitionMax && arr[9] <= repetitionMax && arr[10] <= repetitionMax && arr[11] <= repetitionMax && arr[12] <= repetitionMax && arr[8] > 0 && arr[9] > 0 && arr[10] > 0 && arr[11] > 0 && arr[12] > 0) {
+        if (arr[8] <= arr[9] && arr[9] <= arr[10] && arr[10] <= arr[11] && arr[11] <= arr[12]) {
+    //Jess end
+            //cout << "Data in the third line are correct.\n";
+        }else {
+            cout << "Five numbers in the third line should increase from left to right.\n";
+            exit (1);
+        }
+    }else {
+        //cout << "Please provide all data in the range [1,100) in the third line.\n";
+        cout << "Please provide all data in the range [1,10000] in the third line.\n";
+        exit (1);
+    }
+
+    //Check 5th line
+    //Jess start - 5th line is protocol check only
+    //if (arr[16] < 100 && arr[17] < 100 && arr[18] < 100 && arr[19] < 100 && arr[20] < 100 && arr[16] > 0 && arr[17] > 0 && arr[18] > 0 && arr[19] > 0 && arr[20] > 0) {
+    //    if (arr[16] <= arr[17] && arr[17] <= arr[18] && arr[18] <= arr[19] && arr[19] <= arr[20]) {
+    if (
+           (arr[16] == 4 || arr[16] == 8)
+        && (arr[17] == 4 || arr[17] == 8)
+        && (arr[18] == 4 || arr[18] == 8)
+        && (arr[19] == 4 || arr[19] == 8)){
+            //cout << "Data in the fifth line are correct.\n";
+    } else {
+        cout << "Fifth line should be 4 numbers of protocol with 4 or an 8. There was a protocol that did not indicate of of these numbers\n";
+        exit (1);
+    }
+
+    //Check 2nd line
+    //Jess start
+    //if (arr[5] != 4 && arr[5] != 8) {
+    if (!(arr[5] == 4 || arr[5] == 8)){
+    //Jess end
+        cout << "The protocol should be only 4 or 8 in the second line.\n";
+        exit (1);
+    }
+
+    if (arr[6] > 1000000 || arr[6] <= 0) {
+        cout << "The maximum number of moves is not correct in the second line (range(0,1000000]).\n";
+        exit (1);
+    }
+
+    //Jess start
+    if (arr[7] > repetitionMax || arr[7] < 0){
+        cout << "The maximum number of moves is not correct in the second line (range(0,10000]).\n";
+        exit (1);
+    }
+    //Jess end
+
+    //Check 4th line (dimension)
+    //Jess start - line 4 is in order of D, P, M.
+    //if (arr[13] != 4 && arr[13] != 8) {
+    //    cout << "The protocol should be only 4 or 8 in the fourth line.\n";
+    //    exit (1);
+    //}
+    //Jess end
+    if (arr[13] <= 0 || arr[13] >= 100) {
+        cout << "Dimension must be a positive number greater than 0 and less than 100 on the fourth line.\n";
+        exit (1);
+    }
+
+    //if (arr[14] > 1000000 || arr[14] <= 0) {
+    //    cout << "The maximum number of moves is not correct in the fourth line (range(0,1000000]).\n";
+    //    exit (1);
+    //}
+
+    //Jess start - this will work if they don't give a 4 or 8, but if they give one or the other it won't work.
+    //if (arr[14] != 4 && arr[14] != 8) {
+    if (!(arr[14] == 4 || arr[14] == 8)) {
+        cout << "The protocol should be only 4 or 8 in the fourth line.\n";
+        exit (1);
+    }
+
+    //Missing check on original code
+    if (arr[15] > 1000000 || arr[15] <= 0) {
+        cout << "The maximum number of moves is not correct in the fourth line (range(0,1000000]).\n";
+        exit (1);
+    }
+    //Jess end
+
+    //Check 6th line
+    //Jess start -- Missing index 20. copy and paste error correction. Line 6 goes D, M, R
+
+    if (arr[20] <= 0 || arr[20] >= 100) {
+        cout << "Dimension must be a positive number greater than 0 and less than 100 on the 6th line.\n";
+        exit (1);
+    }
+
+    //if (arr[21] != 4 && arr[21] != 8) {
+    //    cout << "The protocol should be only 4 or 8 in the sixth line.\n";
+    //    exit (1);
+    //}
+
+    //if (arr[22] > 1000000 || arr[22] <= 0) {
+    //    cout << "The maximum number of moves is not correct in the sixth line (range(0,1000000]).\n";
+    //    exit (1);
+    //}
+
+    if (arr[21] > 1000000 || arr[21] <= 0) {
+        cout << "The maximum number of moves is not correct in the sixth line (range(0,1000000]).\n";
+        exit (1);
+    }
+
+    if (arr[22] > repetitionMax || arr[22] < 0){
+        cout << "The maximum number of moves is not correct in the sixth line (range(0,10000]).\n";
+        exit (1);
+    }
+
+}
+
+REMOVE END*/
+
+/*------------------------------------------------------------------------------------------------
+Function        : checkInputPattern
+Description     : The purpose of this function is to test a pattern of each line read in from
+                  the input file. This function does not test for ranges or ascending order.
+                  Other functions will be created for those.
+input           : rowNum - indicates row number being tested from input file
+                  testStr - a string read from the input stream and passed onto the Function
+output          : a boolean value whether or not the test matches the expected pattern
+source          : https://cpprocks.com/files/c++11-regex-cheatsheet.pdf
+                  https://www.softwaretestinghelp.com/regex-in-cpp/
+                  https://solarianprogrammer.com/2011/10/12/cpp-11-regex-tutorial/
+                  https://www.softwaretestinghelp.com/regex-in-cpp/
+--------------------------------------------------------------------------------------------------*/
+
+bool checkInputPattern(int rowNum, string testStr){
+    
+    regex reg_expr1("(independent,)((D|M|R|P),)([[:digit:]]+,){1,11}([[:digit:]]+$)");
+    regex reg_expr234("(fixed,)((D|M|R|P),)([[:digit:]]+$)");
+    regex reg_expr5("(dependent,)((L|H|A)$)");
+    
+    switch (rowNum){
+        case 1:
+            return regex_match(testStr,reg_expr1);
+            break;
+        case 2:
+        case 3:
+        case 4:
+            return regex_match(testStr,reg_expr234);
+            break;
+        case 5:
+            return regex_match(testStr,reg_expr5);
+            break;
+        default:
+            cout << "Row index out of bounds error have occured. Please verify there are no extra lines on input file" << endl;
+            exit(1);
+                    
+    }
+}
+
+/*------------------------------------------------------------------------------------------------
+Function        : checkInputAscendingOrder
+Description     : The purpose of this function is to test to see if the sequence of number on line 1 
+                  is in ascending order. The vector contains two additional elements/tokens at the 
+                  beginning, so we will need to start with the 3rd position to test the numbers
+input           : testToken - reference to vector object. 
+output          : a boolean value whether or not the x dimension is in ascending order
+--------------------------------------------------------------------------------------------------*/
+
+bool checkInputAscendingOrder(vector<string> &testToken){
+    
+    for (int i = 3; i < testToken.size(); i++){
+        if (stoi(testToken.at(i)) < stoi(testToken.at(i - 1))){
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/*------------------------------------------------------------------------------------------------
+Function        : checkInputRange
+Description     : The purpose of this function is to test the amount of value(s) making sure it does
+                  not exceed the maximum. The vector contains two additional elements/tokens at the
+                  beginning, so we will need to start with the 3rd position to test the numbers
+input           : valueType - key value indicating what type of value we are testing. Keys are
+                    D = dimension
+                    M = max moves
+                    R = repitition
+                    P = protocol
+                  testToken - reference to vector object. 
+output          : a boolean value whether or not the x dimension is in ascending order
+--------------------------------------------------------------------------------------------------*/
+
+bool checkInputRange(string valueType, vector<string> &testToken){
+    
+    int testValue;
+    
+    //cout << "BEGIN - Checking input range " << endl;
+    //cout << testToken.list() << endl;
+    
+    //for (int a = 0; a < testToken.size(); a++){
+    //    cout << a + 1 << " = " << testToken.at(a) << endl;
+    //}
+    
+    //cout << testToken.size() << endl;
+    for (int i = 2; i < testToken.size(); i++) {
+        //cout << i << " = " << testToken.at(i) << endl;
+        testValue = stoi(testToken.at(i));
+        if (valueType == "D") {
+            if ((testValue > DIMENSION_MAX - 1) || (testValue < 1)) {
+                return false;
+            }
+        } else if (valueType == "M") {
+            if ((testValue > MAXMOVES_MAX) || (testValue < 1)) {
+                return false;
+            }
+        } else if (valueType == "R") {
+            if ((testValue > REPETITION_MAX) || (testValue < 1)){
+                return false;
+            }
+        } else {
+            if (testValue != PROTOCOL_4 && testValue != PROTOCOL_8){
+                return false;
+            }    
+        }
+    } //end for
+    return true;
+}
+
+
+/*------------------------------------------------------------------------------------------------
+Function        : validateInputLine
+Description     : The purpose of this function is validate the input line data to test and see if
+                  they follow the expectation to our requirement including patterns, ranges, and 
+                  is in ascending order (1st line only). This function will call three other helper
+                  functions in determining the validity of the row.
+input           : rowNum - indicates row number being tested from input file
+                  str - a string read from the input stream and passed onto the Function
+                  tokens - a reference to a vector class object created in main. This is used to 
+                        split the comma delimeted row into individual tokens for further validation
+                  dimensionUsed - a reference to dimensionUsed to keep track if a previosly validated
+                        row already uses the information type. 
+                  maxMovesUsed - a reference to dimensionUsed to keep track if a previosly validated
+                        row already uses the information type.
+                  repetitionUsed - a reference to dimensionUsed to keep track if a previosly validated
+                        row already uses the information type.
+                  protocolUsed - a reference to dimensionUsed to keep track if a previosly validated
+                        row already uses the information type. 
+output          : Either a meaningful error message or reference variables from main are assigned 
+                  values.
+--------------------------------------------------------------------------------------------------*/
+
+void validateInputLine(IndependentType &x, DependentType &y, int rowNum, string str, vector<string> &tokens, bool &dimensionUsed, bool &maxMovesUsed, bool &repetitionUsed, bool &protocolUsed, int &dimension, int &maxMoves, int &repetition, int &protocol, list<int> &xList){
+    
+    string evaluateType;
+    
+    switch (rowNum){
+	    case 1: 
+	        //check to see if pattern of line read matches expexted pattern
+	        if (checkInputPattern(rowNum,str)){
+	            split(str, ',', tokens);
+	            evaluateType = tokens.at(1);
+	        } else {
+	            cout << "First line does not match the expected pattern which is:" << endl
+	                 << "     1) Begins with independent followed by a comma" << endl
+	                 << "     2) Contains a key value of D, P, M, or R followed by a comma" << endl
+	                 << "     3) Contains a series of numbers delimited with a comma and not exceeding 12 numbers" << endl
+	                 << "Please correct input file and retry." << endl
+	                 << "Program aborting...";
+	            exit(1);
+            }
+	                
+	        if (!checkInputAscendingOrder(tokens)){
+	            cout << "First line is expected to be in ascending order. Please correct input file and retry." << endl
+                     << "Program aborting..." << endl;
+                exit(1);
+            }
+           // cout << "checkAscendingOrder pass" << endl;
+	                
+	        if (!checkInputRange(tokens.at(1), tokens)){
+	            cout << "Line " << rowNum << " has a number that exceeds the maximum threshold. Please correct input file and retry." << endl
+	                 << "     - If it is a dimension, it has to be a positive number less than or equal to " << DIMENSION_MAX - 1 << endl
+	                 << "     - If it is a max move, it has to be a number less than or equal to " << MAXMOVES_MAX << endl
+	                 << "     - If it is a repetition, it has to be a number less than or equal to " << REPETITION_MAX << endl
+	                 << "     - If it is a protocol, it has to be either a value of " << PROTOCOL_4 << " or " << PROTOCOL_8 << endl
+	                 << "Program aborting..." << endl;
+	            exit(1);
+	        }
+	       // cout << "checkInputRange pass" << endl;
+	        
+	        // only  enum x is assigned on the first row because the numbers should be a series.
+	        if (evaluateType == "D") {
+	            x = Dimension;
+            } else if (evaluateType == "M") {
+                x = MaxMoves;
+            } else if (evaluateType == "R") {
+                x = Repetition;
+            } else {
+                x = Protocol;
+            }
+	        //Numbers start from 3rd array
+	        for (int i = 2; i < tokens.size(); i++){
+	            xList.push_back(stoi(tokens.at(i)));
+	        }
+	        
+	        break;
+        case 2:
+        case 3:
+        case 4:
+            if (checkInputPattern(rowNum,str)){
+	            split(str, ',', tokens);
+	            evaluateType = tokens.at(1);
+	        } else {
+	            cout << "Line " << rowNum << " does not match the expected pattern which is:" << endl
+	                 << "     1) Begins with fixed followed by a comma" << endl
+	                 << "     2) Contains a key value of D, P, M, or R, which is not used in " << endl
+	                 << "        andy of the prior lines, followed by a comma " << endl
+	                 << "     3) Contains a single number" << endl
+	                 << "Please correct input file and retry." << endl
+	                 << "Program aborting...";
+	                 exit(1);
+	        }
+	        
+	        if (!checkInputRange(tokens.at(1), tokens)){
+	            cout << "Line " << rowNum << " has a number that exceeds the maximum threshold. Please correct input file and retry." << endl
+	                 << "     - If it is a dimension, it has to be a positive number less than or equal to " << DIMENSION_MAX - 1 << endl
+	                 << "     - If it is a max move, it has to be a number less than or equal to " << MAXMOVES_MAX << endl
+	                 << "     - If it is a repetition, it has to be a number less than or equal to " << REPETITION_MAX << endl
+	                 << "     - If it is a protocol, it has to be either a value of " << PROTOCOL_4 << " or " << PROTOCOL_8 << endl
+	                 << "Program aborting..." << endl;
+	            exit(1);
+	        }
+	        
+	        if (evaluateType == "D") {
+	            if(!dimensionUsed) {
+	                dimension = stoi(tokens.at(2));    
+	            } else {
+	                cout << "Dimension has already been used. Please check your input file and correct data." << endl
+	                     << "Program aborting..." << endl;
+	                exit(1);
+	            }
+                
+            } else if (evaluateType == "M") {
+                if(!maxMovesUsed) {
+	                maxMoves = stoi(tokens.at(2));    
+	            } else {
+	                cout << "Max Moves has already been used. Please check your input file and correct data." << endl
+	                     << "Program aborting..." << endl;
+	                exit(1);
+	            }
+            
+            } else if (evaluateType == "R") {
+                if(!repetitionUsed) {
+	                repetition = stoi(tokens.at(2));    
+	            } else {
+	                cout << "Repetition has already been used. Please check your input file and correct data." << endl
+	                     << "Program aborting..." << endl;
+	                exit(1);
+	            }
+                
+            } else if (evaluateType == "P") {
+                if(!protocolUsed) {
+	                protocol = stoi(tokens.at(2));    
+	            } else {
+	                cout << "Protocol has already been used. Please check your input file and correct data." << endl
+	                     << "Program aborting..." << endl;
+	                exit(1);
+	            }
+                
+            } else {
+                cout << "Unknown fixed variable is used: ." << evaluateType << endl
+	                 << "Program aborting..." << endl;
+	            exit(1); 
+            }
+            break;
+        case 5:
+            if (checkInputPattern(rowNum,str)){
+	            split(str, ',', tokens);
+	            evaluateType = tokens.at(1);
+	        } else {
+	            cout << "Line " << rowNum << " does not match the expected pattern which is:" << endl
+	                 << "     1) Begins with dependent followed by a comma" << endl
+	                 << "     2) Contains a key value of L, H, or A, which is not used in " << endl
+	                 << "        andy of the prior lines, followed by a comma " << endl
+	                 << "Please correct input file and retry." << endl
+	                 << "Program aborting...";
+	                 exit(1);
+	        }
+	        //enum y is assigned on the 5th row
+            if (evaluateType == "L") {
+                y = LowestMove;
+            } else if (evaluateType == "H") {
+                y = HighestMove;
+            } else {
+                y = AverageMove;
+            }
+	        break;
+        default:
+            cout << "Row index out of bounds error have occured. Please verify there are no extra lines on input file" << endl;
+            exit(1);
+            break;
+    } //end switch
+    
+    //If program have not aborted by now, this is a valid row.
+	//Keep track of which value was used.
+	if (tokens.at(1) == "D"){
+	    dimensionUsed = true;
+	} else if (tokens.at(1) == "M") {
+	    maxMovesUsed = true;
+    } else if (tokens.at(1) == "R") {
+        repetitionUsed = true;
+    } else {
+        protocolUsed = true;
+    }
+    tokens.clear();
+        
+} //end validateInputLine
+
+//=============================================================================
+// Function     : main
+// Description  : This program takes opens a file, reads in the data stream seperates
+//                  into into integers and stores the number in an array.  The array
+//                  contents are validated.  If the data is valid we call 3 functions
+//                  experiment1, experiment2 and experiment3.
+// Sources      :
+//random number generator:            https://www.digitalocean.com/community/tutorials/random-number-generator-c-plus-plus
+//keyed objects(several sources):     https://en.cppreference.com/w/cpp/container/map
+//                                    https://stackoverflow.com/questions/68286710/how-to-create-a-map-of-unique-object-keys-and-objects-in-c
+//                                    https://www.techiedelight.com/use-custom-objects-keys-std-map-cpp/
+//                                    https://www.geeksforgeeks.org/introduction-to-red-black-tree/
+//============================================================================
+
+int main() {
+    
+    cout << "This expirments creates X by Y grid based on the input variable DIMENTION." << endl;
+    cout << "There at two players.  player1 starts at 0,0 and Player2 starts" << endl;
+    cout << "at Dimension, Dimension.  We then simulate movemnets of the players  " << endl;   
+    cout << "either in Cardinal(4) or Ordinal(8) directions.  The amount of moves" << endl;
+    cout << "the players move and the number of times the play is determined by variables" << endl;                 
+    cout << " MaxMoves and repetitions.  We run 3 experiments with 1 independent" << endl;
+    cout << " and 3 dependent variables.  All variables are recieved throgh and input" << endl;
+    cout << " indata.txt and the results are printed to outdata.txt."  << endl << endl;
+    
+    //Initialize variables
+    
+    //seed the built in random function.  declared once for program
+    srand ((unsigned) time (NULL));
+    
+	string str;
+	bool dimensionUsed = false;
+    bool repetitionUsed = false;
+    bool maxMovesUsed = false;
+    bool protocolUsed = false;
+	int i = 0;
+	int lines = 0;
+	int ctr = 0;
+	int dimension = 0;
+	int maxMoves = 0;
+	int repetition = 0;
+	int protocol = 0;
+	
+	list<int> xList;
+	
+	//create an object for the enums.
+	//independent type will become the "x-axis" on the bar chart, and
+	//dependent type will become the "y-axis"
+	IndependentType x;
+	DependentType y;
+	
+	//Vector to hold the tokens
+	vector<string> tokens;
+	
+    //Open the file
+	ifstream fin("indata.txt", ios::in);
+
+	//Test for File open errors
+	if (fin.fail()) {
+	    cout << "Error opening the input file." << endl
+	         << "Program aborting..." << endl;
+	    exit (1);
+    }
+
+	//Read a data from the file
+	
+    while (getline(fin, str)) {
+	    ctr++;
+	    validateInputLine(x, y, ctr, str, tokens, dimensionUsed, maxMovesUsed, repetitionUsed, protocolUsed, dimension, maxMoves, repetition, protocol, xList);
+	    
+            /*
+	        for (auto e : tokens) {
+
+	           //Check each string
+	           if (regex_search(e,regex("[a-zA-Z]"))){
+	        	  //checking for alpha character
+	        	  cout << "There is an alphabetical character " << e << " in line " << lines+1 << " . " << endl;
+	        	  exit (1);
+	           } else if (regex_search(e,regex("[^a-zA-Z0-9.\r\n]"))){
+	        	  //checking for non-alphanumeric
+	        	  cout << "There is a special character " << e << " in line " << lines+1 << " . " << endl;
+	              exit (1);
+	           } else if (regex_search(e,regex("[.]"))){
+	              //checking for decimal
+	        	  cout << "There is a decimal " << e << " in line " << lines+1 << " . " << endl;
+	        	  exit (1);
+	           }
+	           */
+	           
+    } //end while
+
+	  
+    ofstream fout("outdata.txt", ios::out | ios::app);
+    	
+    if (fout.fail()) {
+	    cout << "Error opening the output file.\n";
+	    exit (1);
+    }
+	    
+	printOutputHeader(x, y, fout);
+	
+	
+	for (list<int>::iterator it = xList.begin(); it != xList.end(); it++){
+	    switch (x) {
+	        case Dimension:
+	            simulate(x, y, *it, maxMoves, repetition, protocol, fout);
+	            break;
+            case MaxMoves:
+                simulate(x, y, dimension, *it, repetition, protocol, fout);
+                break;
+            case Repetition:
+                simulate(x, y, dimension, maxMoves, *it, protocol, fout);
+                break;
+            case Protocol:
+                simulate(x, y, dimension, maxMoves, repetition, *it, fout);
+                break;
+            default:
+                cout << "You have passed in an unknown independent type value that has not implemented yet." << endl
+                     << "Program aborting..." << endl;
+                exit(1);
+	            break;
+	    } //end switch (x)
+	} //end for
+	
+	    
+	    printSpacer(fout);
+	    
+	    //TODO: Work on bar chart
+
+        
+	cout << "The end! Goodbye! " << endl;
+	return 0;
+}
